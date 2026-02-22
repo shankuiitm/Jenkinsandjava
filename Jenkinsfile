@@ -1,5 +1,7 @@
 pipeline {
-    agent any
+    agent {
+        label 'Java_Agent1'
+    }
 
     environment {
         GIT_REPO = 'https://github.com/shankuiitm/Jenkinsandjava.git'
