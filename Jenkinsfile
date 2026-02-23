@@ -1,74 +1,44 @@
 pipeline {
-    agent {
-        label 'Java_Agent1'
-    }
+    agent { label 'Java_Agent1' }
 
     environment {
-        GIT_REPO = 'https://github.com/shankuiitm/Jenkinsandjava.git'
         AWS_REGION = 'ap-south-1'
-        ECR_REPO_NAME = 'test-project'
         ECR_PUBLIC_REPO_URI = 'public.ecr.aws/l4g0s5q6/test-project'
         IMAGE_TAG = 'latest'
-        AWS_ACCOUNT_ID = '930775455780'
         IMAGE_URI = "${ECR_PUBLIC_REPO_URI}:${IMAGE_TAG}"
     }
 
     stages {
-        stage('Install AWS CLI') {
+        stage('Checkout') {
             steps {
-                script {
-                    sh '''
-                        set -e
-                        echo "Installing AWS CLI..."
-                        apt update
-                        apt install -y unzip curl
-
-                        curl https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o awscliv2.zip
-                        unzip -q awscliv2.zip
-                        ./aws/install
-                        aws --version
-                    '''
-                }
+                checkout scm
             }
         }
 
-             stage('Configure AWS Credentials') {
-    steps {
-        script {
-            sh '''
-            echo "Setting up AWS credentials for Jenkins..."
-            mkdir -p /var/lib/jenkins/.aws
-            echo "[default]" > /var/lib/jenkins/.aws/credentials
-            echo "aws_access_key_id=AKIAWN26KB25BRBD26NF" >> /var/lib/jenkins/.aws/credentials
-            echo "aws_secret_access_key=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" >> /var/lib/jenkins/.aws/credentials
-            chown -R jenkins:jenkins /var/lib/jenkins/.aws
-            '''
-        }
-    }
-             }
-            stage('Clone Repository') {
+        stage('Build Java App') {
             steps {
-                git url: "${GIT_REPO}", branch: 'main'
+                sh '''
+                    echo "Building Java application..."
+                    mvn clean -B -Denforcer.skip=true package
+                '''
             }
         }
 
-        stage('Build') {
+        stage('Login to AWS ECR Public') {
             steps {
-                script {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-creds'
+                ]]) {
                     sh '''
-                        echo "Building Java application..."
-                        mvn clean -B -Denforcer.skip=true package
-                    '''
-                }
-            }
-        }
+                        echo "Configuring AWS CLI..."
+                        aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+                        aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+                        aws configure set region ${AWS_REGION}
 
-        stage('Login to AWS ECR') {
-            steps {
-                script {
-                    sh '''
-                        echo "Logging into AWS ECR..."
-                        aws ecr-public get-login-password --region ap-south-1 | docker login --username AWS --password-stdin public.ecr.aws
+                        echo "Logging in to ECR Public..."
+                        aws ecr-public get-login-password --region ${AWS_REGION} \
+                          | docker login --username AWS --password-stdin public.ecr.aws
                     '''
                 }
             }
@@ -76,34 +46,29 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    sh '''
-                        echo "Building Docker image..."
-                        docker build -t ${IMAGE_URI} .
-                    '''
-                }
+                sh '''
+                    echo "Building Docker image..."
+                    docker build -t ${IMAGE_URI} .
+                '''
             }
         }
 
-        stage('Push Docker Image to ECR') {
+        stage('Push Docker Image') {
             steps {
-                script {
-                    sh '''
-                        echo "Pushing Docker image to ECR..."
-                        docker push ${IMAGE_URI}
-                    '''
-                }
+                sh '''
+                    echo "Pushing Docker image to ECR Public..."
+                    docker push ${IMAGE_URI}
+                '''
             }
         }
+    }
 
-     }
-    
     post {
         success {
-            echo "Docker image pushed to ECR successfully and deployed."
+            echo "✅ Image pushed successfully: ${IMAGE_URI}"
         }
         failure {
-            echo "Pipeline failed."
+            echo "❌ Pipeline failed. Check logs above."
         }
     }
 }
