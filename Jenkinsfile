@@ -2,7 +2,7 @@ pipeline {
     agent { label 'Java_Agent1' }
 
     environment {
-        AWS_REGION = 'ap-south-1'
+        AWS_REGION = 'us-east-1'
         ECR_PUBLIC_REPO_URI = 'public.ecr.aws/l4g0s5q6/test-project'
         IMAGE_TAG = 'latest'
         IMAGE_URI = "${ECR_PUBLIC_REPO_URI}:${IMAGE_TAG}"
@@ -37,8 +37,8 @@ pipeline {
                         aws configure set region ${AWS_REGION}
 
                         echo "Logging in to ECR Public..."
-                        aws ecr-public get-login-password --region ${AWS_REGION} \
-                          | docker login --username AWS --password-stdin public.ecr.aws
+                        aws ecr-public get-login-password --region us-east-1 \
+                        | docker login --username AWS --password-stdin public.ecr.aws
                     '''
                 }
             }
