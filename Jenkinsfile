@@ -53,9 +53,9 @@ pipeline {
         }
 
         stage('Deploy to EKS') {
-            steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
-                    sh '''
+            steps 
+                sh '''
+                        aws sts get-caller-identity
                         aws eks update-kubeconfig --region $AWS_REGION --name $EKS_CLUSTER
                         kubectl apply -f deploymentjava.yaml
                         kubectl apply -f servicelb.yaml
