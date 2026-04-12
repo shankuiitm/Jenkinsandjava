@@ -24,16 +24,21 @@ pipeline {
             }
         }
 
-        stage('ECR Login') {
-            steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
-                    sh '''
-                        aws ecr-public get-login-password --region us-east-1 \
-                        | docker login --username AWS --password-stdin public.ecr.aws
-                    '''
-                }
-            }
+       stage('Create ECR Repo') {
+    steps {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
+            sh '''
+                aws ecr-public describe-repositories \
+                --region us-east-1 \
+                --repository-names jenkinsecr || \
+
+                aws ecr-public create-repository \
+                --repository-name jenkinsecr \
+                --region us-east-1
+            '''
         }
+    }
+}
 
         stage('Docker Build') {
             steps {
