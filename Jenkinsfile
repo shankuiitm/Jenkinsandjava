@@ -53,7 +53,7 @@ pipeline {
         }
 
         stage('Deploy to EKS') {
-            steps 
+            steps {
                 sh '''
                         aws sts get-caller-identity
                         aws eks update-kubeconfig --region $AWS_REGION --name $EKS_CLUSTER
