@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
         - name: java-app
-          image: public.ecr.aws/k0c8q8z5/jenkinsecr:latest
+          image: public.ecr.aws/l4g0s5q6/jenkinsecr
           ports:
             - containerPort: 8080
