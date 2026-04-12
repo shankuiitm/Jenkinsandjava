@@ -24,21 +24,19 @@ pipeline {
             }
         }
 
-       stage('Create ECR Repo') {
-    steps {
-        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
-            sh '''
-                aws ecr-public describe-repositories \
-                --region us-east-1 \
-                --repository-names jenkinsecr || \
+        stage('Create ECR Repo') {
+            steps {
+                sh '''
+                    aws ecr-public describe-repositories \
+                    --region $AWS_REGION \
+                    --repository-names jenkinsecr || \
 
-                aws ecr-public create-repository \
-                --repository-name jenkinsecr \
-                --region us-east-1
-            '''
+                    aws ecr-public create-repository \
+                    --repository-name jenkinsecr \
+                    --region $AWS_REGION
+                '''
+            }
         }
-    }
-}
 
         stage('Docker Build') {
             steps {
@@ -55,14 +53,12 @@ pipeline {
         stage('Deploy to EKS') {
             steps {
                 sh '''
-                        aws sts get-caller-identity
-                        aws eks update-kubeconfig --region $AWS_REGION --name $EKS_CLUSTER
-                        kubectl apply -f deploymentjava.yaml
-                        kubectl apply -f servicelb.yaml
-                    '''
-                }
+                    aws sts get-caller-identity
+                    aws eks update-kubeconfig --region $AWS_REGION --name $EKS_CLUSTER
+                    kubectl apply -f deploymentjava.yaml
+                    kubectl apply -f servicelb.yaml
+                '''
             }
         }
     }
 }
-
