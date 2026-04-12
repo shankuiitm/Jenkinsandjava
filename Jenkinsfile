@@ -7,7 +7,7 @@ pipeline {
         ECR_PUBLIC_REPO_URI = 'public.ecr.aws/l4g0s5q6/jenkinsecr'
         IMAGE_TAG = 'latest'
         IMAGE_URI = "${ECR_PUBLIC_REPO_URI}:${IMAGE_TAG}"
-        EKS_CLUSTER = 'my-eks-cluster'
+        EKS_CLUSTER = 'demo-cluster'
     }
 
     stages {
