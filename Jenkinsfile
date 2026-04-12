@@ -1,42 +1,33 @@
 pipeline {
-    agent { label 'Java_Agent1' }
+    agent any
 
     environment {
-        AWS_REGION = 'us-east-1'
-        ECR_PUBLIC_REPO_URI = 'public.ecr.aws/l4g0s5q6/test-project'
+        GIT_REPO = 'https://github.com/Ajayrichard/Jenkinsandjava.git'
+        AWS_REGION = 'ap-south-1'
+        ECR_PUBLIC_REPO_URI = 'public.ecr.aws/k0c8q8z5/jenkinsecr'
         IMAGE_TAG = 'latest'
         IMAGE_URI = "${ECR_PUBLIC_REPO_URI}:${IMAGE_TAG}"
+        EKS_CLUSTER = 'my-eks-cluster'
     }
 
     stages {
-        stage('Checkout') {
+
+        stage('Clone') {
             steps {
-                checkout scm
+                git url: "${GIT_REPO}", branch: 'main'
             }
         }
 
-        stage('Build Java App') {
+        stage('Build') {
             steps {
-                sh '''
-                    echo "Building Java application..."
-                    mvn clean -B -Denforcer.skip=true package
-                '''
+                sh 'mvn clean package -DskipTests'
             }
         }
 
-        stage('Login to AWS ECR Public') {
+        stage('ECR Login') {
             steps {
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'aws-creds'
-                ]]) {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
                     sh '''
-                        echo "Configuring AWS CLI..."
-                        aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-                        aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-                        aws configure set region ${AWS_REGION}
-
-                        echo "Logging in to ECR Public..."
                         aws ecr-public get-login-password --region us-east-1 \
                         | docker login --username AWS --password-stdin public.ecr.aws
                     '''
@@ -44,31 +35,29 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Docker Build') {
             steps {
-                sh '''
-                    echo "Building Docker image..."
-                    docker build -t ${IMAGE_URI} .
-                '''
+                sh 'docker build -t ${IMAGE_URI} .'
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Push Image') {
             steps {
-                sh '''
-                    echo "Pushing Docker image to ECR Public..."
-                    docker push ${IMAGE_URI}
-                '''
+                sh 'docker push ${IMAGE_URI}'
             }
         }
-    }
 
-    post {
-        success {
-            echo "✅ Image pushed successfully: ${IMAGE_URI}"
-        }
-        failure {
-            echo "❌ Pipeline failed. Check logs above."
+        stage('Deploy to EKS') {
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
+                    sh '''
+                        aws eks update-kubeconfig --region $AWS_REGION --name $EKS_CLUSTER
+                        kubectl apply -f deploymentjava.yaml
+                        kubectl apply -f servicelb.yaml
+                    '''
+                }
+            }
         }
     }
 }
+
