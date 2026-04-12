@@ -42,13 +42,13 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                sh 'docker build -t ${IMAGE_URI} .'
+                sh "docker build -t ${IMAGE_URI} ."
             }
         }
 
         stage('Push Image') {
             steps {
-                sh 'docker push ${IMAGE_URI}'
+                sh "docker push ${IMAGE_URI}"
             }
         }
 
