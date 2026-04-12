@@ -2,7 +2,7 @@ pipeline {
     agent { label 'java-agent' }
 
     environment {
-        GIT_REPO = 'https://github.com/abhimangowdagr/Jenkinsandjava.git'
+        GIT_REPO = 'https://github.com/shankuiitm/Jenkinsandjava.git'
         AWS_REGION = 'ap-south-1'
         ECR_PUBLIC_REPO_URI = 'public.ecr.aws/q0e7m1l2/jenkinsecr'
         IMAGE_TAG = 'latest'
