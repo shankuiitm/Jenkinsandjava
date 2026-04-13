@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         GIT_REPO = 'https://github.com/shankuiitm/Jenkinsandjava.git'
-        AWS_REGION = 'us-east-1'
+        AWS_REGION = 'ap-south-1'
         ECR_PUBLIC_REPO_URI = 'public.ecr.aws/l4g0s5q6/jenkinsecr'
         IMAGE_TAG = 'latest'
         IMAGE_URI = "${ECR_PUBLIC_REPO_URI}:${IMAGE_TAG}"
